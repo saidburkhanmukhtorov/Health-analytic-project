@@ -1,0 +1,9 @@
+[submodule "health-analytics-service"]
+	path = health-analytics-service
+	url = git@github.com:saidburkhanmukhtorov/health-analytics-service.git
+[submodule "auth-for-health-analytics"]
+	path = auth-for-health-analytics
+	url = git@github.com:saidburkhanmukhtorov/auth-for-health-analytics.git
+[submodule "api-gateway-health-analytics"]
+	path = api-gateway-health-analytics
+	url = git@github.com:saidburkhanmukhtorov/api-gateway-health-analytics.git
