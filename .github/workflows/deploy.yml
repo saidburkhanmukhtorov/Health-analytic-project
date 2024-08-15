@@ -1,0 +1,76 @@
+name: Deploy to Lightsail
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Verify Connection Details
+        run: |
+          echo "Connecting to host: ${{ secrets.LIGHTSAIL_HOST }}"
+          echo "Using user: ${{ secrets.LIGHTSAIL_USER }}"
+
+      - name: Deploy to Lightsail
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          key_format: pem
+          port: 22
+          script: |
+            echo "Starting deployment..."
+            cd /home/ubuntu/Health-analytic-project
+            git pull origin main
+            git submodule update --remote --recursive
+
+            # Stop all existing containers
+            sudo docker compose down
+
+            # Start orchestre container
+            sudo docker compose up -d --build
+
+            # Build and start Analytics Service
+            cd health-analytics-service
+            sudo docker compose down
+            sudo docker compose up -d --build
+            cd ..
+
+            # Build and start API Gateway service
+            cd api-gateway-health-analytics
+            sudo docker compose down
+            sudo docker compose up -d --build
+            cd ..
+
+            # Build and start Auth Service
+            cd auth-for-health-analytics
+            sudo docker compose down
+            sudo docker compose up -d --build
+            cd ..
+
+            echo "Deployment complete."
+        env:
+          LIGHTSAIL_HOST: ${{ secrets.LIGHTSAIL_HOST }}
+          LIGHTSAIL_USER: ${{ secrets.LIGHTSAIL_USER }}
+          LIGHTSAIL_SSH_KEY: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+
+      - name: Debug SSH Connection
+        if: failure()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          key_format: pem
+          port: 22
+          script: |
+            echo "Debug: Testing SSH connection"
+            whoami
+            pwd
+            ls -la
+          debug: true
